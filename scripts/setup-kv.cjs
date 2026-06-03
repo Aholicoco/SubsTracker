@@ -16,9 +16,18 @@ function run(command) {
   });
 }
 
+function parseJsonOutput(output) {
+  // Wrangler v4 可能在 JSON 前输出 banner/warning 文字，跳过非 JSON 前缀
+  const start = output.indexOf('[');
+  const objStart = output.indexOf('{');
+  const idx = start === -1 ? objStart : (objStart === -1 ? start : Math.min(start, objStart));
+  if (idx === -1) throw new Error('Wrangler 输出中未找到 JSON');
+  return JSON.parse(output.slice(idx));
+}
+
 function listNamespaces() {
   const output = run('npx wrangler kv namespace list');
-  const parsed = JSON.parse(output);
+  const parsed = parseJsonOutput(output);
   return Array.isArray(parsed) ? parsed : [];
 }
 

@@ -51,6 +51,23 @@
 
 ## 🚀 部署
 
+### 前置条件
+
+- **Node.js** >= 18（推荐 22）
+- **Cloudflare 账号**（免费套餐即可）
+- **Cloudflare API Token**（见下方权限说明）
+
+### API Token 权限
+
+在 [Cloudflare Dashboard](https://dash.cloudflare.com) → 右上角头像 → **My Profile** → **API Tokens** → **Create Token**：
+
+| 权限 | 范围 | 级别 | 用途 |
+|------|------|------|------|
+| Workers Scripts | Account | Edit | 部署 Worker |
+| Workers KV Storage | Account | Edit | 创建/绑定 KV 命名空间 |
+
+推荐使用 **Edit Cloudflare Workers** 模板，再添加 **Workers KV Storage → Edit** 权限。
+
 ### 方式一：命令行部署
 
 ```bash
@@ -58,18 +75,26 @@ git clone https://github.com/wangwangit/SubsTracker.git
 cd SubsTracker
 npm install
 
-# 设置 Token
-# Linux/macOS:
+# 设置 Token（当前终端窗口有效，关闭后需重新设置）
+# Linux / macOS:
 export CLOUDFLARE_API_TOKEN=你的token
 # Windows PowerShell:
 $env:CLOUDFLARE_API_TOKEN="你的token"
+# Windows CMD:
+set CLOUDFLARE_API_TOKEN=你的token
 
+# 验证登录
+npx wrangler whoami
+
+# 部署（自动创建 KV 命名空间 + 部署 Worker）
 npm run deploy:safe
 ```
 
-`deploy:safe` 自动执行：
+`deploy:safe` 依次执行：
 1. `npm run setup` — 检测/创建 `SUBSCRIPTIONS_KV` + `SUBSCRIPTIONS_KV_PREVIEW`，自动写入 `wrangler.toml`
 2. `npm run deploy` — `wrangler deploy`
+
+部署成功后终端会输出 Worker URL（如 `https://subscription-manager.xxx.workers.dev`）。
 
 ### 方式二：GitHub Actions 自动部署
 
@@ -77,7 +102,7 @@ Fork 本仓库后，在仓库 **Settings → Secrets and variables → Actions**
 
 | Secret 名称 | 说明 |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（需要 Workers 编辑 + KV 编辑权限） |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（权限同上） |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID（可选，Token 已锁定账户时可省略） |
 
 配置完成后，每次 push 到 `master` 分支会自动运行测试并部署。也可在 GitHub Actions 页面手动触发 Deploy workflow。
@@ -88,11 +113,11 @@ Fork 本仓库后，在仓库 **Settings → Secrets and variables → Actions**
 - 用户名：`admin`
 - 密码：`password`
 
-**首次登录后请立即在系统配置中修改密码。**
+**首次登录后请立即在系统配置页面修改密码。**
 
 ### 忘记密码
 
-到 Cloudflare Dashboard → Workers → KV → `SUBSCRIPTIONS_KV` → 编辑 `config` 这条记录的 JSON 中 `ADMIN_PASSWORD` 字段。
+到 Cloudflare Dashboard → **Workers & Pages** → **KV** → `SUBSCRIPTIONS_KV` → 编辑 `config` 这条记录的 JSON 中 `ADMIN_PASSWORD` 字段。
 
 ---
 
@@ -107,6 +132,8 @@ npm run deploy:safe
 首次访问时 KV 数据会**自动迁移**到新结构（多 Key 拆分、提醒规则、可观测性日志）。旧数据自动备份保留 7 天。
 
 > ⚠️ **如果你之前按 UTC 配置过 `NOTIFICATION_HOURS`**：升级后该字段改按你设置的 `TIMEZONE` 解释。请到配置页根据底部"实时预览"重新调整。
+
+> **Wrangler 版本**：项目使用 Wrangler v4，如遇认证错误 [code: 9106] 请运行 `npm install --save-dev wrangler@4` 升级。
 
 ---
 
@@ -166,6 +193,14 @@ curl -X POST https://your-domain.workers.dev/api/notify/YOUR_TOKEN \
 ### Authentication error [code: 10000]
 
 通常是 Wrangler 缓存或 Token 权限问题。重新设置 Token 后重试，仍报错则清理 `.wrangler/` 目录后再来。
+
+### Authentication failed [code: 9106]
+
+Wrangler 版本过低，升级到 v4 即可：
+
+```bash
+npm install --save-dev wrangler@4
+```
 
 ---
 

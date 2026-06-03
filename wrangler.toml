@@ -19,6 +19,12 @@ directory = "./public"
 binding = "ASSETS"
 
 # 定时任务配置 - 每小时检查一次（UTC）
+# KV 命名空间配置（自动生成）
+[[kv_namespaces]]
+binding = "SUBSCRIPTIONS_KV"
+id = "13239038017e46ac92a428b6c632ed36"
+preview_id = "0dd1ecbc002942edad3ef3ffcb68d327"
+
 [triggers]
 crons = ["0 * * * *"]
 
